@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class UnlockDoor : MonoBehaviour
 {
-    public Material doorOpened;
-    public GameObject doorMesh;
+    public bool canOpen = false;
+    private Animator doorAnim;
+    private bool cooldown = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        doorAnim = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -22,14 +23,36 @@ public class UnlockDoor : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            if (collision.gameObject.GetComponent<PlayerController>().hasKey == true)
+            if (collision.gameObject.GetComponent<PlayerController>().hasKey == true & canOpen == false)
             {
+                canOpen = true;
                 collision.gameObject.GetComponent<PlayerController>().hasKey = false;
                 collision.gameObject.GetComponent<PlayerController>().keyUI.gameObject.SetActive(false);
-                gameObject.GetComponent<MeshCollider>().enabled = false;
-                doorMesh.gameObject.GetComponent<Renderer>().material = doorOpened;
+            }
+
+            if (canOpen == true & cooldown == false)
+            {
+                StartCoroutine(Open());
             }
         }
+    }
+
+    IEnumerator Open()
+    {
+        cooldown = true;
+        doorAnim.SetBool("open", true);
+        yield return new WaitForSeconds(0.05f);
+        gameObject.GetComponent<BoxCollider>().enabled = false;
+        yield return new WaitForSeconds(0.3f);
+        gameObject.GetComponent<BoxCollider>().enabled = true;
+        yield return new WaitForSeconds(3);
+        gameObject.GetComponent<BoxCollider>().enabled = false;
+        doorAnim.SetBool("open", false);
+        yield return new WaitForSeconds(0.2f);
+        gameObject.GetComponent<BoxCollider>().enabled = true;
+        yield return new WaitForSeconds(1);
+        cooldown = false;
+
     }
 
 }

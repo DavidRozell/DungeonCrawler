@@ -63,12 +63,28 @@ public class Enemy : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag("Sword"))
+        if (other.gameObject.CompareTag("NormalSword"))
         {
-            if (player.gameObject.GetComponent<PlayerController>().attacking == true & died == false & damaged == false)
+            if (player.gameObject.GetComponent<PlayerController>().attacking == true & died == false & damaged == false & other.gameObject.GetComponent<MeshRenderer>().enabled == true)
             {
                 enemyAnim.SetBool("isDamaged", true);
                 health = health - 10;
+                StartCoroutine(Hurt());
+                if (health > 0 & showingHealth == false)
+                {
+                    player.GetComponent<PlayerController>().enemyHealthUI.text = health.ToString();
+                    player.GetComponent<PlayerController>().enemyHealthUI.gameObject.SetActive(true);
+                    StartCoroutine(ShowHealth());
+                }
+            }
+        }
+
+        if (other.gameObject.CompareTag("StrongSword"))
+        {
+            if (player.gameObject.GetComponent<PlayerController>().attacking == true & died == false & damaged == false & other.gameObject.GetComponent<MeshRenderer>().enabled == true)
+            {
+                enemyAnim.SetBool("isDamaged", true);
+                health = health - 20;
                 StartCoroutine(Hurt());
                 if (health > 0 & showingHealth == false)
                 {
@@ -94,9 +110,9 @@ public class Enemy : MonoBehaviour
         swinging = true;
         enemyAnim.SetBool("isWalking", false);
         enemyAnim.SetBool("isSwinging", true);
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(0.2f);
         player.gameObject.GetComponent<PlayerController>().vulnerable = true;
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.7f);
         enemyAnim.SetBool("isSwinging", false);
         player.gameObject.GetComponent<PlayerController>().vulnerable = false;
         swinging = false;
@@ -111,6 +127,7 @@ public class Enemy : MonoBehaviour
             skeletonMesh.gameObject.GetComponent<Renderer>().material = hurt;
         }
         damaged = true;
+        swinging = false;
         enemyAnim.SetBool("isSwinging", false);
         enemyAnim.SetBool("isWalking", false);
         yield return new WaitForSeconds(1);

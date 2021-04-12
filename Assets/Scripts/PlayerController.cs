@@ -8,17 +8,19 @@ public class PlayerController : MonoBehaviour
 {
     public Material hurt;
     public Material normal;
-    public Material normalArmor;
+    public Material armorDamaged;
     public GameObject sword;
     public GameObject armor;
     public GameObject playerMesh;
     public Text keyUI;
-    public Text swordUI;
+    public Text normalSwordUI;
+    public Text strongSwordUI;
     public Text healthUI;
     public Text armorHealthUI;
     public Text enemyHealthUI;
     public bool hasKey = false;
     public bool hasSword = false;
+    public bool hasStrongSword = false;
     public bool hasArmor = false;
     public bool damaged = false;
     public bool died = false;
@@ -42,10 +44,14 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        horizontalInput = Input.GetAxis("Horizontal");
-        forwardInput = Input.GetAxis("Vertical");
-        transform.Translate(Vector3.forward * Time.deltaTime * speed * forwardInput);
-        transform.Rotate(Vector3.up, turnSpeed * horizontalInput * Time.deltaTime);
+        if (died == false)
+        {
+            horizontalInput = Input.GetAxis("Horizontal");
+            forwardInput = Input.GetAxis("Vertical");
+            transform.Translate(Vector3.forward * Time.deltaTime * speed * forwardInput);
+            transform.Rotate(Vector3.up, turnSpeed * horizontalInput * Time.deltaTime);
+        }
+
         if (forwardInput > 0 | forwardInput < 0)
         {
             playerAnim.SetBool("isWalking", true);
@@ -55,10 +61,8 @@ public class PlayerController : MonoBehaviour
         {
             playerAnim.SetBool("isWalking", false);
         }
-        healthUI.text = health.ToString();
-        armorHealthUI.text = armorHealth.ToString();
 
-        if (Input.GetKeyDown(KeyCode.Space) & attacking == false & coolDown == false & damaged == false)//& hasSword == true & coolDown == false & damaged == false)
+        if (Input.GetKeyDown(KeyCode.Space) & attacking == false & coolDown == false & damaged == false & hasSword == true)
         {
             playerAnim.SetBool("isAttacking", true);
             StartCoroutine(SwordAttacking());
@@ -69,12 +73,9 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(Dead());
         }
 
-        if (armorHealth <= 0)
-        {
-            hasArmor = false;
-            Destroy(armor.gameObject);
-            armorHealthUI.gameObject.SetActive(false);
-        }
+        healthUI.text = health.ToString();
+        armorHealthUI.text = armorHealth.ToString();
+
     }
 
 
@@ -87,6 +88,9 @@ public class PlayerController : MonoBehaviour
                 if (hasArmor == true)
                 {
                     damaged = true;
+                    Vector3 lookDirection = (other.gameObject.transform.position - gameObject.transform.position).normalized;
+                    lookDirection.y = 0;
+                    gameObject.transform.rotation = Quaternion.LookRotation(lookDirection);
                     armorHealth = armorHealth - 10;
                 }
                 else
@@ -110,6 +114,7 @@ public class PlayerController : MonoBehaviour
         playerAnim.SetBool("died", true);
         playerAnim.SetBool("isAttacking", false);
         playerAnim.SetBool("isWalking", false);
+        playerAnim.SetBool("isDamaged", false);
         coolDown = true;
         speed = 0;
         turnSpeed = 0;
@@ -120,24 +125,44 @@ public class PlayerController : MonoBehaviour
     IEnumerator Hurt()
     {
         playerAnim.SetBool("isAttacking", false);
+        attacking = false;
         playerAnim.SetBool("isWalking", false);
-        if (hasArmor == true)
+
+        if (health > 0 & hasArmor == false)
         {
-            armor.gameObject.GetComponent<Renderer>().material = hurt;
-            yield return new WaitForSeconds(1);
-            damaged = false;
-            armor.gameObject.GetComponent<Renderer>().material = normalArmor;
+            playerMesh.gameObject.GetComponent<Renderer>().material = hurt;
         }
-        else
+
+        if (health > 0 & hasArmor == true & armorHealth > 0)
         {
-            if (health > 0)
-            {
-                playerMesh.gameObject.GetComponent<Renderer>().material = hurt;
-            }
-            yield return new WaitForSeconds(1);
-            playerMesh.gameObject.GetComponent<Renderer>().material = normal;
-            damaged = false;
+            speed = 0;
+            turnSpeed = 0;
+            playerAnim.SetBool("isAttacking", false);
+            playerAnim.SetBool("isWalking", false);
+            playerAnim.SetBool("isDamaged", true);
+            playerMesh.gameObject.GetComponent<Renderer>().material = armorDamaged;
         }
+
+        if (health > 0 & hasArmor == true & armorHealth <= 0)
+        {
+            speed = 0;
+            turnSpeed = 0;
+            playerAnim.SetBool("isAttacking", false);
+            playerAnim.SetBool("isWalking", false);
+            playerAnim.SetBool("isDamaged", true);
+            playerMesh.gameObject.GetComponent<Renderer>().material = armorDamaged;
+            yield return new WaitForSeconds(0.3f);
+            hasArmor = false;
+            armor.gameObject.GetComponent<MeshRenderer>().enabled = false;
+            armorHealthUI.gameObject.SetActive(false);
+        }
+
+        yield return new WaitForSeconds(1);
+        playerMesh.gameObject.GetComponent<Renderer>().material = normal;
+        playerAnim.SetBool("isDamaged", false);
+        damaged = false;
+        speed = 3.6f;
+        turnSpeed = 90;
     }
 
     IEnumerator SwordAttacking()
@@ -146,7 +171,7 @@ public class PlayerController : MonoBehaviour
         speed = 0;
         turnSpeed = 0;
         playerAnim.SetBool("isAttacking", true);
-        yield return new WaitForSeconds(0.7f);
+        yield return new WaitForSeconds(0.4f);
         attacking = true;
         yield return new WaitForSeconds(0.5f);
         attacking = false;
